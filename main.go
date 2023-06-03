@@ -19,27 +19,29 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	
-	requestGithub()
 
+	requestGithub()
 }
 
 // Function to generate a random branch name
 func generateRandomBranchName() string {
 	rand.Seed(time.Now().UnixNano())
-	randomString := make([]byte, 8)
-	for i := range randomString {
-		randomString[i] = byte(rand.Intn(26) + 97) // Generate a random lowercase ASCII character
-	}
+
 	timestamp := time.Now().Format("20050102150405") // Current timestamp
+	randomString := make([]byte, 8)
+
+	for i := range randomString {
+		randomString[i] = byte(rand.Intn(26) + 97) //nolint:gosec // we don't need cryptographically secure random numbers here
+	}
+
 	return fmt.Sprintf("branch-%s-%s", string(randomString), timestamp)
 }
 
-func updateFile(repositoryName string, client *github.Client, ctx context.Context, improvedContent string) {
+func updateFile(ctx context.Context, repositoryName string, client *github.Client, improvedContent string) {
 	// Repository information
 	owner := os.Getenv("GITHUB_REPOSITORY_OWNER")
 	repo := repositoryName
-	baseBranch := os.Getenv("GITHUB_BASE_BRANCH") 
+	baseBranch := os.Getenv("GITHUB_BASE_BRANCH")
 	newBranch := generateRandomBranchName()
 	filePath := "README.md"
 
@@ -130,19 +132,16 @@ func requestGithub() {
 		resp, _ := client.Repositories.DownloadContents(ctx, *repository.Owner.Login, *repository.Name, "README.md", nil)
 		buf := new(bytes.Buffer)
 		_, err := buf.ReadFrom(resp)
+
 		if err != nil {
 			fmt.Println(err)
 		}
 
 		readmeContent := buf.String()
-
-		// Generate prompt for OpenAI
 		prompt := fmt.Sprintf("Improve the README.md for the %s repository.\n\n%s", *repository.Name, readmeContent)
-
 		newReadme := requestOpenAI(prompt)
 
-		updateFile(*repository.Name, client, ctx, newReadme)
-
+		updateFile(ctx, *repository.Name, client, newReadme)
 	}
 }
 func requestOpenAI(prompt string) string {
