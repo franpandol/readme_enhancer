@@ -1,4 +1,4 @@
-module readme_enhanced
+module readme_enhancer
 
 go 1.18
 
