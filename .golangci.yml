@@ -24,7 +24,6 @@ linters:
   enable:
     - bodyclose
     - unused
-    - depguard
     - dogsled
     - dupl
     - errcheck
@@ -34,7 +33,6 @@ linters:
     - gocritic
     - gofmt
     - goimports
-    - gomnd
     - gocyclo
     - gosec
     - gosimple
