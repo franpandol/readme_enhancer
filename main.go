@@ -48,10 +48,7 @@ func updateFile(ctx context.Context, repositoryName string, client *github.Clien
 	// Check if the new branch already exists
 	_, _, err := client.Repositories.GetBranch(ctx, owner, repo, newBranch)
 	if err == nil {
-		_, err = client.Git.DeleteRef(ctx, owner, repo, "heads/"+newBranch)
-		if err != nil {
-			log.Fatal(err)
-		}
+		log.Fatal("Branch already exists")
 	}
 
 	// Get the reference of the base branch
@@ -100,29 +97,27 @@ func updateFile(ctx context.Context, repositoryName string, client *github.Clien
 		Body:                github.String("This is an automated pull request to update the README.md file."),
 		MaintainerCanModify: github.Bool(true),
 	}
-	// print pr url
 	pullRequest, _, err := client.PullRequests.Create(ctx, owner, repo, pr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// print pr url
 	fmt.Println(*pullRequest.HTMLURL)
 }
 
 func requestGithub() {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_API_KEY")},
 	)
 	tc := oauth2.NewClient(ctx, ts)
-
 	client := github.NewClient(tc)
 
 	// list all repositories for the authenticated user
 	repositories, _, _ := client.Repositories.List(ctx, "", nil)
 	for _, repository := range repositories {
-		// get README.md from every repo and print it
+		// get README.md from every repo 
 		readme, _, _ := client.Repositories.GetReadme(ctx, *repository.Owner.Login, *repository.Name, nil)
 		if readme == nil {
 			continue
@@ -144,6 +139,7 @@ func requestGithub() {
 		updateFile(ctx, *repository.Name, client, newReadme)
 	}
 }
+
 func requestOpenAI(prompt string) string {
 	client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
 	resp, err := client.CreateChatCompletion(
